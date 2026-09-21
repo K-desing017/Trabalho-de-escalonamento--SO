@@ -1,3 +1,4 @@
+#serve para importar o módulo random do Python, que permite gerar valores aleatórios.
 import random
 
 # Define o maior tempo que o programa pode simular.
