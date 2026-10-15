@@ -490,6 +490,8 @@ def SJF(preemptivo, execucao, espera, restante, chegada):
     imprime_stats(tempo_espera)
 
 
+# Funcao responsavel pelo escalonamento por prioridade.
+# O parametro preemptivo define se o processo pode ser interrompido.
 def PRIORIDADE(
         preemptivo,
         execucao,
@@ -499,33 +501,232 @@ def PRIORIDADE(
         prioridade
 ):
 
-    # Faz copias das listas para preparar o algoritmo.
+    # Cria copias das listas recebidas como parametros.
+    # Assim, a simulacao nao altera as listas originais.
     tempo_execucao = list(execucao)
-    tempo_espera = list(espera)
-    tempo_restante = list(restante)
     tempo_chegada = list(chegada)
     prioridade_temp = list(prioridade)
 
-    # Prioridade ainda sera implementado.
-    print("Prioridade ainda nao implementado.")
+    # Reinicia o tempo restante de cada processo.
+    # Cada processo comeca com seu tempo total de execucao.
+    tempo_restante = list(tempo_execucao)
 
-    # Mostra as estatisticas atuais.
+    # Inicializa o tempo de espera de todos os processos com zero.
+    tempo_espera = [0] * n_processos
+
+    # Guarda o tempo atual da simulacao.
+    tempo_atual = 0
+
+    # Conta quantos processos ja terminaram.
+    finalizados = 0
+
+    # Repete a simulacao enquanto existirem processos pendentes.
+    while finalizados < n_processos:
+
+        # Cria uma lista vazia para guardar os processos disponiveis.
+        processos_disponiveis = []
+
+        # Percorre todos os processos cadastrados.
+        for i in range(n_processos):
+
+            # Verifica se o processo ja chegou
+            # e se ainda possui tempo para executar.
+            if (
+                tempo_chegada[i] <= tempo_atual
+                and tempo_restante[i] > 0
+            ):
+
+                # Adiciona o processo a lista de disponiveis.
+                processos_disponiveis.append(i)
+
+        # Verifica se existe algum processo disponivel.
+        if len(processos_disponiveis) == 0:
+
+            # Se nenhum processo chegou, avanca o relogio.
+            tempo_atual += 1
+
+            # Volta ao inicio do while para verificar novamente.
+            continue
+
+        # Escolhe o processo com maior prioridade.
+        # Nesta implementacao, o menor numero indica maior prioridade.
+        processo = min(
+            processos_disponiveis,
+            key=lambda i: prioridade_temp[i]
+        )
+
+        # Verifica se o algoritmo esta no modo preemptivo.
+        if preemptivo:
+
+            # Mostra o tempo atual, o processo escolhido
+            # e quanto tempo ainda falta para ele terminar.
+            print(
+                "tempo[" + str(tempo_atual) +
+                "]: processo[" + str(processo) +
+                "] restante=" + str(tempo_restante[processo])
+            )
+
+            # Executa o processo durante uma unidade de tempo.
+            tempo_restante[processo] -= 1
+
+            # Avanca o tempo da simulacao em uma unidade.
+            tempo_atual += 1
+
+            # Verifica se o processo terminou de executar.
+            if tempo_restante[processo] == 0:
+
+                # Calcula o tempo de espera do processo.
+                # Espera = termino - chegada - tempo de execucao.
+                tempo_espera[processo] = (
+                    tempo_atual
+                    - tempo_chegada[processo]
+                    - tempo_execucao[processo]
+                )
+
+                # Aumenta a quantidade de processos finalizados.
+                finalizados += 1
+
+        # Caso contrario, o algoritmo sera nao-preemptivo.
+        else:
+
+            # Continua executando o processo escolhido
+            # enquanto ele ainda tiver tempo restante.
+            while tempo_restante[processo] > 0:
+
+                # Mostra as informacoes da execucao atual.
+                print(
+                    "tempo[" + str(tempo_atual) +
+                    "]: processo[" + str(processo) +
+                    "] restante=" + str(tempo_restante[processo])
+                )
+
+                # Diminui uma unidade do tempo restante.
+                tempo_restante[processo] -= 1
+
+                # Avanca o relogio da simulacao.
+                tempo_atual += 1
+
+            # Quando o processo termina, calcula seu tempo de espera.
+            tempo_espera[processo] = (
+                tempo_atual
+                - tempo_chegada[processo]
+                - tempo_execucao[processo]
+            )
+
+            # Registra que mais um processo terminou.
+            finalizados += 1
+
+    # Depois que todos os processos terminarem,
+    # mostra os tempos de espera e a media.
     imprime_stats(tempo_espera)
 
 
-def Round_Robin(execucao, espera, restante):
+# Funcao responsavel pelo escalonamento Round Robin.
+def Round_Robin(execucao, espera, restante, chegada):
 
-    # Faz copias das listas para preparar o algoritmo.
+    # Cria uma copia dos tempos de execucao dos processos.
     tempo_execucao = list(execucao)
-    tempo_espera = list(espera)
-    tempo_restante = list(restante)
 
-    # Round Robin ainda sera implementado.
-    print("Round Robin ainda nao implementado.")
+    # Cria uma copia dos tempos de chegada.
+    tempo_chegada = list(chegada)
 
-    # Mostra as estatisticas atuais.
+    # Guarda quanto tempo cada processo ainda precisa executar.
+    tempo_restante = list(tempo_execucao)
+
+    # Inicializa o tempo de espera de cada processo com zero.
+    tempo_espera = [0] * n_processos
+
+    # Cria a fila que determina a ordem de execucao.
+    fila = []
+
+    # Guarda o tempo atual da simulacao.
+    tempo_atual = 0
+
+    # Conta quantos processos ja terminaram.
+    finalizados = 0
+
+    # Define o quantum: cada processo executa por ate 2 unidades
+    # de tempo por vez.
+    quantum = 2
+
+    # Continua enquanto existirem processos nao finalizados.
+    while finalizados < n_processos:
+
+        # Adiciona a fila os processos que ja chegaram
+        # e ainda possuem tempo de execucao.
+        for i in range(n_processos):
+            if (
+                tempo_chegada[i] <= tempo_atual
+                and tempo_restante[i] > 0
+                and i not in fila
+            ):
+                fila.append(i)
+
+        # Se a fila estiver vazia, avanca o tempo
+        # ate a chegada do proximo processo.
+        if len(fila) == 0:
+            proximas_chegadas = [
+                tempo_chegada[i]
+                for i in range(n_processos)
+                if tempo_restante[i] > 0
+                and tempo_chegada[i] > tempo_atual
+            ]
+
+            if len(proximas_chegadas) > 0:
+                tempo_atual = min(proximas_chegadas)
+
+            continue
+
+        # Retira o primeiro processo da fila.
+        processo = fila.pop(0)
+
+        # Define quanto tempo o processo pode executar nesta rodada.
+        tempo_fatia = min(quantum, tempo_restante[processo])
+
+        # Executa o processo durante o tempo definido.
+        for _ in range(tempo_fatia):
+
+            # Mostra o tempo, o processo e seu tempo restante.
+            print(
+                "tempo[" + str(tempo_atual) +
+                "]: processo[" + str(processo) +
+                "] restante=" + str(tempo_restante[processo])
+            )
+
+            # Diminui uma unidade do tempo restante.
+            tempo_restante[processo] -= 1
+
+            # Avanca o relogio da simulacao.
+            tempo_atual += 1
+
+        # Adiciona a fila os processos que chegaram durante
+        # a execucao e ainda precisam ser executados.
+        for i in range(n_processos):
+            if (
+                tempo_chegada[i] <= tempo_atual
+                and tempo_restante[i] > 0
+                and i not in fila
+                and i != processo
+            ):
+                fila.append(i)
+
+        # Se o processo nao terminou, ele volta para o final da fila.
+        if tempo_restante[processo] > 0:
+            fila.append(processo)
+
+        # Se terminou, calcula seu tempo de espera.
+        else:
+            tempo_espera[processo] = (
+                tempo_atual
+                - tempo_chegada[processo]
+                - tempo_execucao[processo]
+            )
+
+            # Aumenta a quantidade de processos finalizados.
+            finalizados += 1
+
+    # Mostra as estatisticas e a media do tempo de espera.
     imprime_stats(tempo_espera)
-
 
 # Chama a funcao principal e inicia o programa.
 main()
